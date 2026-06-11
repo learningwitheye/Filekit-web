@@ -14,7 +14,8 @@ async function processViaOurServer(file: File, slug: string, baseName: string): 
 
   console.log(`Sending ${file.name} to Backend Engine...`);
 
-  const response = await fetch("http://13.126.10.29:3000/convert", {
+  // 🚨 FIXED: Purana HTTP IP address hata kar naya secure HTTPS API link laga diya
+  const response = await fetch("https://api.filekitpdfs.online/convert", {
     method: "POST",
     body: formData,
   });
@@ -33,7 +34,7 @@ async function processViaOurServer(file: File, slug: string, baseName: string): 
   const blob = await response.blob();
 
   // 🚨 NAYA: Saare new image/video extensions yahan add kar diye
-  let ext = "pdf"; 
+  let ext = "pdf";
   if (slug === "pdf-to-word") ext = "docx";
   else if (slug === "pdf-to-excel") ext = "xlsx";
   else if (slug === "pdf-to-ppt" || slug === "pdf-to-powerpoint") ext = "pptx";
@@ -108,7 +109,7 @@ export async function pdfToImages(file: File, isPng: boolean): Promise<Blob[]> {
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const blobs: Blob[] = []
-  
+
   const mimeType = isPng ? "image/png" : "image/jpeg"
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -128,7 +129,7 @@ export async function pdfToImages(file: File, isPng: boolean): Promise<Blob[]> {
 // 3. 🔀 THE MASTER ROUTER ENGINE
 // ============================================================================
 export async function processFile(slug: ToolSlug, files: File[]): Promise<ProcessResult> {
-  console.log("🚀 BHAU KA TRACKER! Asli slug yeh aa raha hai:", slug);
+  console.log("⚡ [FileKit Engine] Processing Tool Slug:", slug);
 
   const file = files[0]; const base = file.name.replace(/\.[^.]+$/, ""); const inputExt = file.name.split(".").pop()?.toLowerCase() || ""
 
@@ -145,7 +146,7 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
     const isPng = slug === "pdf-to-png";
     const ext = isPng ? "png" : "jpg";
     const blobs = await pdfToImages(file, isPng);
-    
+
     if (blobs.length === 1) return { type: "single", blob: blobs[0], filename: `${base}-page1.${ext}` }
     return { type: "multi", blobs: blobs.map((b, i) => ({ blob: b, filename: `${base}-page${i + 1}.${ext}` })) }
   }
@@ -155,7 +156,7 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
     const { PDFDocument, rgb, degrees, StandardFonts } = await import("pdf-lib");
     const bytes = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(bytes);
-    
+
     if (slug === "rotate-pdf") {
       pdfDoc.getPages().forEach(page => page.setRotation(degrees(page.getRotation().angle + 90)));
       const savedBytes = await pdfDoc.save();
@@ -169,7 +170,7 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
     if (slug === "organize-pdf") { // Reverses the PDF
       const pageCount = pdfDoc.getPageCount();
       const newDoc = await PDFDocument.create();
-      const copiedPages = await newDoc.copyPages(pdfDoc, Array.from({length: pageCount}, (_, i) => pageCount - 1 - i));
+      const copiedPages = await newDoc.copyPages(pdfDoc, Array.from({ length: pageCount }, (_, i) => pageCount - 1 - i));
       copiedPages.forEach(p => newDoc.addPage(p));
       const savedBytes = await newDoc.save();
       return { type: "single", blob: new Blob([savedBytes as any], { type: "application/pdf" }), filename: `${base}-organized.pdf` };
@@ -184,12 +185,12 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
       return { type: "single", blob: new Blob([savedBytes as any], { type: "application/pdf" }), filename: `${base}-watermarked.pdf` };
     }
     if (slug === "add-page-numbers") {
-       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-       pdfDoc.getPages().forEach((page, idx) => {
-         const { width } = page.getSize();
-         page.drawText(`Page ${idx + 1}`, { x: width / 2 - 20, y: 20, size: 12, font, color: rgb(0,0,0) });
-       });
-       const savedBytes = await pdfDoc.save();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      pdfDoc.getPages().forEach((page, idx) => {
+        const { width } = page.getSize();
+        page.drawText(`Page ${idx + 1}`, { x: width / 2 - 20, y: 20, size: 12, font, color: rgb(0, 0, 0) });
+      });
+      const savedBytes = await pdfDoc.save();
       return { type: "single", blob: new Blob([savedBytes as any], { type: "application/pdf" }), filename: `${base}-numbered.pdf` };
     }
     if (slug === "sign-pdf") {
@@ -199,27 +200,27 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
       return { type: "single", blob: new Blob([savedBytes as any], { type: "application/pdf" }), filename: `${base}-signed.pdf` };
     }
     if (slug === "split-pdf") {
-       const pageCount = pdfDoc.getPageCount();
-       const blobs = [];
-       for(let i = 0; i < pageCount; i++) {
-          const newDoc = await PDFDocument.create();
-          const [copiedPage] = await newDoc.copyPages(pdfDoc, [i]);
-          newDoc.addPage(copiedPage);
-          const savedBytes = await newDoc.save();
-          blobs.push({ blob: new Blob([savedBytes as any], { type: "application/pdf" }), filename: `${base}-page${i+1}.pdf` });
-       }
-       return { type: "multi", blobs };
+      const pageCount = pdfDoc.getPageCount();
+      const blobs = [];
+      for (let i = 0; i < pageCount; i++) {
+        const newDoc = await PDFDocument.create();
+        const [copiedPage] = await newDoc.copyPages(pdfDoc, [i]);
+        newDoc.addPage(copiedPage);
+        const savedBytes = await newDoc.save();
+        blobs.push({ blob: new Blob([savedBytes as any], { type: "application/pdf" }), filename: `${base}-page${i + 1}.pdf` });
+      }
+      return { type: "multi", blobs };
     }
   }
 
   // 🚨 NAYA: Saare Image, Video, aur PDF Tools Cloud list mein daal diye!
   const cloudTools = [
-    "word-to-pdf", "excel-to-pdf", "powerpoint-to-pdf", "ppt-to-pdf", 
+    "word-to-pdf", "excel-to-pdf", "powerpoint-to-pdf", "ppt-to-pdf",
     "text-to-pdf", "html-to-pdf", "rtf-to-pdf", "odt-to-pdf",
     "pdf-to-word", "pdf-to-excel", "pdf-to-powerpoint", "pdf-to-ppt",
     "pdf-to-text", "pdf-to-txt", "pdf-to-html", "pdf-to-rtf",
-    "tiff-to-pdf", "png-to-jpg", "jpg-to-png", "webp-to-jpg", "jpg-to-webp", 
-    "heic-to-jpg", "svg-to-png", "png-to-svg", "gif-to-mp4", "video-to-gif", 
+    "tiff-to-pdf", "png-to-jpg", "jpg-to-png", "webp-to-jpg", "jpg-to-webp",
+    "heic-to-jpg", "svg-to-png", "png-to-svg", "gif-to-mp4", "video-to-gif",
     "bmp-to-jpg", "tiff-to-jpg",
     "compress-pdf", "protect-pdf", "unlock-pdf", "repair-pdf" // Heavy lifting AWS tools added here
   ];
