@@ -10,12 +10,30 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "FileKit — Every Tool You Need, Lightning Fast & Free",
-  description:
-    "Convert, compress, merge, and transform PDFs and images with 50+ free tools. No installation, no sign-up. Pro plan unlocks unlimited file sizes and AI features.",
-  keywords: ["PDF converter", "image converter", "compress PDF", "merge PDF", "background remover"],
-  generator: "v0.app",
-}
+  title: {
+    default: "FileKit | Every Tool You Need, Lightning Fast & Free",
+    template: "%s | FileKit",
+  },
+  description: "Convert, compress, merge, and transform PDFs and images instantly. 100% fast, secure, and free online tools.",
+  keywords: [
+    "PDF converter", 
+    "Image to PDF", 
+    "Compress PDF", 
+    "Merge PDF", 
+    "Background Remover", 
+    "Image Resizer", 
+    "Free PDF tools", 
+    "PDF editor"
+  ],
+  authors: [{ name: "FileKit" }],
+  openGraph: {
+    title: "FileKit | Mega Utility & Conversion Platform",
+    description: "Lightning fast tools for your PDFs and Images. Convert, compress, and edit in seconds.",
+    url: "https://filekitpdfs.online",
+    siteName: "FileKit",
+    type: "website",
+  },
+};
 
 export default function RootLayout({
   children,
