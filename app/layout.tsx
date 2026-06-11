@@ -47,7 +47,7 @@ export default function RootLayout({
           <Toaster richColors closeButton />
         </ThemeProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
-        <GoogleAnalytics gaId="G-36S88PKCYD" />
+        <GoogleAnalytics gaId="G-2C26E32G4E" />
       </body>
     </html>
   )
