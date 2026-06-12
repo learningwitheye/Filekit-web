@@ -44,7 +44,7 @@ export function Navbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
       <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center gap-3">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0 mr-2">
+        <Link href="/" prefetch={false} className="flex items-center gap-2 shrink-0 mr-2">
           <div className="size-7 bg-primary rounded-md flex items-center justify-center">
             <Zap className="size-4 text-primary-foreground" />
           </div>
@@ -92,10 +92,10 @@ export function Navbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
           >
             {resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
-          <Button variant="ghost" size="sm" className="hidden sm:flex" nativeButton={false} render={<Link href="/auth" />}>
+          <Button variant="ghost" size="sm" className="hidden sm:flex" nativeButton={false} render={<Link href="/auth" prefetch={false} />}>
             Log in
           </Button>
-          <Button size="sm" className="hidden sm:flex" nativeButton={false} render={<Link href="/pricing" />}>
+          <Button size="sm" className="hidden sm:flex" nativeButton={false} render={<Link href="/pricing" prefetch={false} />}>
             Start Free Trial
           </Button>
         </div>
