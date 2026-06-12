@@ -65,6 +65,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         <nav className="p-3">
           <Link
             href="/"
+            prefetch={false} // 🚨 NAYA FIX: All Tools link ke liye
             onClick={onClose}
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium mb-1 transition-colors",
@@ -94,6 +95,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                         <li key={tool.slug}>
                           <Link
                             href={`/tool/${tool.slug}`}
+                            prefetch={false} // 🚨 FINAL BOSS FIX: Yahan 50 tools ek sath load hone se rukenge
                             onClick={onClose}
                             className={cn(
                               "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
