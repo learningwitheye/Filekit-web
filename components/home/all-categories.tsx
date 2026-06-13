@@ -1,5 +1,5 @@
 import * as React from "react"
-import Link from "next/link"
+// 🚨 NAYA FIX: Link import hata diya gaya hai
 import {
   FileText, Table, AlignLeft, Code, FileType, File, Image, FileImage, ImageDown,
   ArrowRightLeft, Smartphone, Shapes, Video, Film, Combine, Scissors, PackageMinus,
@@ -33,7 +33,8 @@ export function AllCategories() {
                 {cat.tools.map((tool) => {
                   const Icon = iconMap[tool.icon]
                   return (
-                    <Link
+                    /* 🚨 NAYA FIX: <Link> ki jagah <a> tag laga diya */
+                    <a
                       key={tool.slug}
                       href={`/tool/${tool.slug}`}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-accent hover:text-accent-foreground rounded-md text-sm transition-colors"
@@ -41,7 +42,7 @@ export function AllCategories() {
                       {Icon && <Icon className="size-3.5 shrink-0" />}
                       {tool.name}
                       {tool.popular && <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-0.5">Hot</Badge>}
-                    </Link>
+                    </a>
                   )
                 })}
               </div>

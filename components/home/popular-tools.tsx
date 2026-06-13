@@ -1,4 +1,4 @@
-import Link from "next/link"
+// 🚨 NAYA FIX: Link import hata diya gaya hai
 import {
   Combine, PackageMinus, FileText, Image, Wand2, ArrowRight,
 } from "lucide-react"
@@ -65,16 +65,18 @@ export function PopularTools() {
             <h2 className="text-2xl font-bold tracking-tight">Popular Tools</h2>
             <p className="text-muted-foreground text-sm mt-1">Most used tools by our community</p>
           </div>
-          <Link href="/tool/compress-pdf" className="text-sm text-primary flex items-center gap-1 hover:underline">
+          {/* 🚨 NAYA FIX: <Link> ki jagah <a> tag laga diya */}
+          <a href="/tool/compress-pdf" className="text-sm text-primary flex items-center gap-1 hover:underline">
             View all <ArrowRight className="size-3.5" />
-          </Link>
+          </a>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tools.map((tool) => {
             const Icon = tool.icon
             return (
-              <Link key={tool.slug} href={`/tool/${tool.slug}`}>
+              /* 🚨 NAYA FIX (FINAL BOSS): <Link> ki jagah <a> laga diya. Scroll/Hover par freeze nahi hoga! */
+              <a key={tool.slug} href={`/tool/${tool.slug}`}>
                 <Card className="h-full hover:shadow-md hover:border-primary/30 transition-all duration-200 cursor-pointer group">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -89,7 +91,7 @@ export function PopularTools() {
                     <CardDescription className="text-sm leading-relaxed">{tool.description}</CardDescription>
                   </CardContent>
                 </Card>
-              </Link>
+              </a>
             )
           })}
         </div>
