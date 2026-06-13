@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+// Link import ab use nahi ho raha, par Next.js ke doosre components ke liye safe rakhne ko chhod sakte hain
+import Link from "next/link" 
 import { usePathname } from "next/navigation"
 import {
   FileText, Table, AlignLeft, Code, FileType, File, Image, FileImage, ImageDown,
@@ -63,9 +64,9 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         )}
       >
         <nav className="p-3">
-          <Link
+          {/* 🚨 FIX 1: All Tools link ko 'a' tag bana diya */}
+          <a
             href="/"
-            prefetch={false} // 🚨 NAYA FIX: All Tools link ke liye
             onClick={onClose}
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium mb-1 transition-colors",
@@ -73,7 +74,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
             )}
           >
             All Tools
-          </Link>
+          </a>
 
           <Accordion
             multiple
@@ -93,9 +94,9 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                       const active = pathname === `/tool/${tool.slug}`
                       return (
                         <li key={tool.slug}>
-                          <Link
+                          {/* 🚨 FIX 2 (FINAL BOSS): <Link> ki jagah <a> lagaya. Hover karne par ab website freeze nahi hogi! */}
+                          <a
                             href={`/tool/${tool.slug}`}
-                            prefetch={false} // 🚨 FINAL BOSS FIX: Yahan 50 tools ek sath load hone se rukenge
                             onClick={onClose}
                             className={cn(
                               "flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors",
@@ -109,7 +110,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
                             {tool.popular && (
                               <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 shrink-0">Hot</Badge>
                             )}
-                          </Link>
+                          </a>
                         </li>
                       )
                     })}
