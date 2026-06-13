@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Modern Gradient Background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9" /> <!-- Sky Blue -->
+      <stop offset="100%" stop-color="#4f46e5" /> <!-- Deep Indigo -->
+    </linearGradient>
+    
+    <!-- Subtle Drop Shadow for 3D effect -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Premium Apple-style Squircle Background -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <g filter="url(#shadow)">
+    <!-- Main Document Shape -->
+    <path d="M176 112 C158.3 112 144 126.3 144 144 V368 C144 385.7 158.3 400 176 400 H336 C353.7 400 368 385.7 368 368 V208 L272 112 H176 Z" fill="#ffffff" />
+    
+    <!-- Document Fold -->
+    <path d="M272 112 V192 C272 200.8 279.2 208 288 208 H368 L272 112 Z" fill="#e2e8f0" />
+
+    <!-- Bold 'F' cutout for FileKit -->
+    <rect x="200" y="184" width="40" height="136" rx="8" fill="#4f46e5" />
+    <rect x="200" y="184" width="88" height="36" rx="8" fill="#4f46e5" />
+    <rect x="200" y="240" width="64" height="36" rx="8" fill="#4f46e5" />
+  </g>
+</svg>
