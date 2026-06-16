@@ -18,8 +18,8 @@ async function processViaOurServer(file: File, slug: string, baseName: string, p
 
   console.log(`Sending ${file.name} to Backend Engine...`);
 
-  // 🚨 TEMP FIX FOR AWS: Abhi seedha IP use karenge jab tak domain set nahi hota
-  const response = await fetch("http://13.126.10.29:3000/convert", {
+  // 🚀 SECURE AWS BACKEND
+  const response = await fetch("https://api.filekitpdfs.online/convert", {
     method: "POST",
     body: formData,
   });
@@ -51,7 +51,7 @@ async function processViaOurServer(file: File, slug: string, baseName: string, p
   else if (slug === "png-to-svg") ext = "svg";
   else if (slug === "gif-to-mp4") ext = "mp4";
   else if (slug === "video-to-gif") ext = "gif";
-  
+
   // 🔥 AI ke liye humesha PNG
   if (slug === "background-remover") ext = "png";
 
@@ -61,7 +61,7 @@ async function processViaOurServer(file: File, slug: string, baseName: string, p
   if (slug === 'protect-pdf') outName = `${baseName}-protected.pdf`;
   if (slug === 'unlock-pdf') outName = `${baseName}-unlocked.pdf`;
   if (slug === 'repair-pdf') outName = `${baseName}-repaired.pdf`;
-  
+
   // 🔥 Background remover ka special naam
   if (slug === "background-remover") outName = `${baseName}-bg-removed.png`;
 
@@ -107,7 +107,7 @@ export async function mergePdfs(files: File[], password?: string): Promise<Blob>
     try {
       const opts = password ? { password } : undefined;
       doc = await PDFDocument.load(bytes, opts as any)
-    } catch(e) {
+    } catch (e) {
       // 🚀 THE FIX: AWS FALLBACK FOR MERGE PDF
       if (password) {
         console.log(`🔐 pdf-lib failed. Unlocking ${file.name} via AWS...`);
@@ -124,7 +124,7 @@ export async function mergePdfs(files: File[], password?: string): Promise<Blob>
         throw new Error(`File ${file.name} is password protected. Please enter correct password.`);
       }
     }
-    
+
     if (!doc) throw new Error("Failed to load PDF.");
     const pages = await merged.copyPages(doc, doc.getPageIndices())
     pages.forEach((p) => merged.addPage(p))
@@ -145,7 +145,7 @@ export async function pdfToImages(file: File, isPng: boolean, password?: string)
     if (password) loadOpts.password = password;
     pdf = await pdfjsLib.getDocument(loadOpts).promise
   } catch (error: any) {
-    if(error.name === "PasswordException") throw new Error("Incorrect Password for PDF.");
+    if (error.name === "PasswordException") throw new Error("Incorrect Password for PDF.");
     throw error;
   }
 
@@ -195,7 +195,7 @@ export async function processFile(slug: ToolSlug, files: File[], password?: stri
   if (["split-pdf", "rotate-pdf", "remove-pages", "organize-pdf", "add-page-numbers", "add-watermark", "sign-pdf"].includes(slug)) {
     const { PDFDocument, rgb, degrees, StandardFonts } = await import("pdf-lib");
     let bytes = await file.arrayBuffer();
-    
+
     let pdfDoc;
     try {
       const opts = password ? { password } : undefined;
@@ -207,11 +207,11 @@ export async function processFile(slug: ToolSlug, files: File[], password?: stri
         try {
           const unlockedResult = await processViaOurServer(file, "unlock-pdf", base, password);
           if (unlockedResult.type === "single") {
-              bytes = await unlockedResult.blob.arrayBuffer();
-              pdfDoc = await PDFDocument.load(bytes); 
+            bytes = await unlockedResult.blob.arrayBuffer();
+            pdfDoc = await PDFDocument.load(bytes);
           }
         } catch (awsError) {
-            throw new Error("Incorrect Password or corrupted file. Please try again.");
+          throw new Error("Incorrect Password or corrupted file. Please try again.");
         }
       } else {
         throw new Error("Encrypted PDF: Please enter the correct password to unlock and process this file.");
