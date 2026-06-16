@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase" // ✅ Supabase Import Kiya
 
 export default function AuthPage() {
   const [mode, setMode] = React.useState<"login" | "signup">("login")
@@ -15,6 +16,17 @@ export default function AuthPage() {
   const [loading, setLoading] = React.useState(false)
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
+
+  // ✅ Google Login ka Function
+  const handleGoogleLogin = async () => {
+    const supabase = createClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`
+      }
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -60,7 +72,7 @@ export default function AuthPage() {
             variant="outline"
             className="w-full gap-2.5"
             type="button"
-            onClick={() => toast.info("Google sign-in coming soon!")}
+            onClick={handleGoogleLogin} // ✅ Yahan function attach kar diya
           >
             <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />

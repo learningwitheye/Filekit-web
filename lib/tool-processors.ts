@@ -7,15 +7,19 @@ export type ProcessResult =
 // ============================================================================
 // 1. 🚀 MASTER BACKEND ROUTER 
 // ============================================================================
-async function processViaOurServer(file: File, slug: string, baseName: string): Promise<ProcessResult> {
+async function processViaOurServer(file: File, slug: string, baseName: string, password?: string): Promise<ProcessResult> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("slug", slug);
 
+  if (password) {
+    formData.append("password", password);
+  }
+
   console.log(`Sending ${file.name} to Backend Engine...`);
 
-  // 🚨 FIXED: Purana HTTP IP address hata kar naya secure HTTPS API link laga diya
-  const response = await fetch("https://api.filekitpdfs.online/convert", {
+  // 🚨 TEMP FIX FOR AWS: Abhi seedha IP use karenge jab tak domain set nahi hota
+  const response = await fetch("http://13.126.10.29:3000/convert", {
     method: "POST",
     body: formData,
   });
@@ -47,6 +51,9 @@ async function processViaOurServer(file: File, slug: string, baseName: string): 
   else if (slug === "png-to-svg") ext = "svg";
   else if (slug === "gif-to-mp4") ext = "mp4";
   else if (slug === "video-to-gif") ext = "gif";
+  
+  // 🔥 AI ke liye humesha PNG
+  if (slug === "background-remover") ext = "png";
 
   // 🚨 NAYA: File names for PDF Manipulations
   let outName = `${baseName}-converted.${ext}`;
@@ -54,6 +61,9 @@ async function processViaOurServer(file: File, slug: string, baseName: string): 
   if (slug === 'protect-pdf') outName = `${baseName}-protected.pdf`;
   if (slug === 'unlock-pdf') outName = `${baseName}-unlocked.pdf`;
   if (slug === 'repair-pdf') outName = `${baseName}-repaired.pdf`;
+  
+  // 🔥 Background remover ka special naam
+  if (slug === "background-remover") outName = `${baseName}-bg-removed.png`;
 
   return { type: "single", blob, filename: outName };
 }
@@ -88,12 +98,34 @@ export async function compressImage(file: File): Promise<Blob> {
   return await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true })
 }
 
-export async function mergePdfs(files: File[]): Promise<Blob> {
+export async function mergePdfs(files: File[], password?: string): Promise<Blob> {
   const { PDFDocument } = await import("pdf-lib")
   const merged = await PDFDocument.create()
   for (const file of files) {
-    const bytes = await file.arrayBuffer()
-    const doc = await PDFDocument.load(bytes)
+    let bytes = await file.arrayBuffer()
+    let doc;
+    try {
+      const opts = password ? { password } : undefined;
+      doc = await PDFDocument.load(bytes, opts as any)
+    } catch(e) {
+      // 🚀 THE FIX: AWS FALLBACK FOR MERGE PDF
+      if (password) {
+        console.log(`🔐 pdf-lib failed. Unlocking ${file.name} via AWS...`);
+        try {
+          const unlockedResult = await processViaOurServer(file, "unlock-pdf", file.name, password);
+          if (unlockedResult.type === "single") {
+            bytes = await unlockedResult.blob.arrayBuffer();
+            doc = await PDFDocument.load(bytes);
+          }
+        } catch (err) {
+          throw new Error(`File ${file.name} has incorrect password or is corrupted.`);
+        }
+      } else {
+        throw new Error(`File ${file.name} is password protected. Please enter correct password.`);
+      }
+    }
+    
+    if (!doc) throw new Error("Failed to load PDF.");
     const pages = await merged.copyPages(doc, doc.getPageIndices())
     pages.forEach((p) => merged.addPage(p))
   }
@@ -101,15 +133,23 @@ export async function mergePdfs(files: File[]): Promise<Blob> {
   return new Blob([bytes as any], { type: "application/pdf" })
 }
 
-export async function pdfToImages(file: File, isPng: boolean): Promise<Blob[]> {
+export async function pdfToImages(file: File, isPng: boolean, password?: string): Promise<Blob[]> {
   const pdfjsLib = await import("pdfjs-dist")
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`
   }
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-  const blobs: Blob[] = []
+  let pdf;
+  try {
+    const loadOpts: any = { data: arrayBuffer };
+    if (password) loadOpts.password = password;
+    pdf = await pdfjsLib.getDocument(loadOpts).promise
+  } catch (error: any) {
+    if(error.name === "PasswordException") throw new Error("Incorrect Password for PDF.");
+    throw error;
+  }
 
+  const blobs: Blob[] = []
   const mimeType = isPng ? "image/png" : "image/jpeg"
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -128,7 +168,7 @@ export async function pdfToImages(file: File, isPng: boolean): Promise<Blob[]> {
 // ============================================================================
 // 3. 🔀 THE MASTER ROUTER ENGINE
 // ============================================================================
-export async function processFile(slug: ToolSlug, files: File[]): Promise<ProcessResult> {
+export async function processFile(slug: ToolSlug, files: File[], password?: string): Promise<ProcessResult> {
   console.log("⚡ [FileKit Engine] Processing Tool Slug:", slug);
 
   const file = files[0]; const base = file.name.replace(/\.[^.]+$/, ""); const inputExt = file.name.split(".").pop()?.toLowerCase() || ""
@@ -140,12 +180,12 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
     const blob = await compressImage(file); return { type: "single", blob, filename: `${base}-compressed.${inputExt}` }
   }
   if (slug === "merge-pdf") {
-    const blob = await mergePdfs(files); return { type: "single", blob, filename: "merged-document.pdf" }
+    const blob = await mergePdfs(files, password); return { type: "single", blob, filename: "merged-document.pdf" }
   }
   if (["pdf-to-jpg", "pdf-to-png", "extract-images"].includes(slug)) {
     const isPng = slug === "pdf-to-png";
     const ext = isPng ? "png" : "jpg";
-    const blobs = await pdfToImages(file, isPng);
+    const blobs = await pdfToImages(file, isPng, password);
 
     if (blobs.length === 1) return { type: "single", blob: blobs[0], filename: `${base}-page1.${ext}` }
     return { type: "multi", blobs: blobs.map((b, i) => ({ blob: b, filename: `${base}-page${i + 1}.${ext}` })) }
@@ -154,8 +194,31 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
   // 🚨 SMART BROWSER PDF MANIPULATION ENGINE 🚨
   if (["split-pdf", "rotate-pdf", "remove-pages", "organize-pdf", "add-page-numbers", "add-watermark", "sign-pdf"].includes(slug)) {
     const { PDFDocument, rgb, degrees, StandardFonts } = await import("pdf-lib");
-    const bytes = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(bytes);
+    let bytes = await file.arrayBuffer();
+    
+    let pdfDoc;
+    try {
+      const opts = password ? { password } : undefined;
+      pdfDoc = await PDFDocument.load(bytes, opts as any);
+    } catch (e: any) {
+      // 🚀 THE FIX: AWS FALLBACK FOR BROWSER TOOLS
+      if (password) {
+        console.log("🔐 Advanced Encryption Detected! Unlocking via AWS Backend first...");
+        try {
+          const unlockedResult = await processViaOurServer(file, "unlock-pdf", base, password);
+          if (unlockedResult.type === "single") {
+              bytes = await unlockedResult.blob.arrayBuffer();
+              pdfDoc = await PDFDocument.load(bytes); 
+          }
+        } catch (awsError) {
+            throw new Error("Incorrect Password or corrupted file. Please try again.");
+        }
+      } else {
+        throw new Error("Encrypted PDF: Please enter the correct password to unlock and process this file.");
+      }
+    }
+
+    if (!pdfDoc) throw new Error("Could not load PDF Document.");
 
     if (slug === "rotate-pdf") {
       pdfDoc.getPages().forEach(page => page.setRotation(degrees(page.getRotation().angle + 90)));
@@ -213,7 +276,7 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
     }
   }
 
-  // 🚨 NAYA: Saare Image, Video, aur PDF Tools Cloud list mein daal diye!
+  // 🚨 NAYA: BACKGROUND REMOVER AWS PE BHEJO
   const cloudTools = [
     "word-to-pdf", "excel-to-pdf", "powerpoint-to-pdf", "ppt-to-pdf",
     "text-to-pdf", "html-to-pdf", "rtf-to-pdf", "odt-to-pdf",
@@ -222,11 +285,11 @@ export async function processFile(slug: ToolSlug, files: File[]): Promise<Proces
     "tiff-to-pdf", "png-to-jpg", "jpg-to-png", "webp-to-jpg", "jpg-to-webp",
     "heic-to-jpg", "svg-to-png", "png-to-svg", "gif-to-mp4", "video-to-gif",
     "bmp-to-jpg", "tiff-to-jpg",
-    "compress-pdf", "protect-pdf", "unlock-pdf", "repair-pdf" // Heavy lifting AWS tools added here
+    "compress-pdf", "protect-pdf", "unlock-pdf", "repair-pdf", "background-remover"
   ];
 
   if (cloudTools.includes(slug) || slug.startsWith("pdf-to-") || slug.endsWith("-to-pdf")) {
-    return await processViaOurServer(file, slug, base);
+    return await processViaOurServer(file, slug, base, password);
   }
 
   // Fallback
